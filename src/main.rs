@@ -34,7 +34,11 @@ fn process_file(path: &Path) -> bool {
             let output = format!("output/{}", filename);
             match img.save(output.clone()) {
                 Ok(_) => {
-                    println!("Image saved to {}", output);
+                    let mut t = term::stdout().unwrap();
+                    t.fg(term::color::GREEN).unwrap();
+                    writeln!(t, "Image saved to {}", output).unwrap();
+                    t.reset().unwrap();
+                    
                     true
                 }
                 Err(_) => false,

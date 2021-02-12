@@ -11,7 +11,10 @@ pub enum Device {
 pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
-        println!("Starting {} conversion", p_str);
+        let mut t = term::stdout().unwrap();
+        t.fg(term::color::YELLOW).unwrap();
+        writeln!(t, "Starting {} conversion", p_str).unwrap();
+        t.reset().unwrap();
     }
 
     let img = image::open(path)?;
