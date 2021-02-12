@@ -16,7 +16,7 @@ pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
 
     let img = image::open(path)?;
     let img = borders::cut(&img);
-    let img = size::resize(&img, Device::KoboForma);
+    let img = size::resize(&img.0, img.1, Device::KoboForma);
     Ok(img)
 }
 
@@ -24,21 +24,48 @@ mod borders {
     use super::bbox;
     use image::DynamicImage;
 
-    pub fn cut(img: &DynamicImage) -> DynamicImage {
+    pub enum BorderType {
+        White,
+        Black,
+    }
+
+    pub fn cut(img: &DynamicImage) -> (DynamicImage, BorderType) {
         println!("Calcutating bounds...");
         let bbox = bbox::bbox(&img, 50);
         println!("Removing borders...");
-        img.crop_imm(bbox.x, bbox.y, bbox.width, bbox.height)
+        (
+            img.crop_imm(bbox.0.x, bbox.0.y, bbox.0.width, bbox.0.height),
+            bbox.1,
+        )
     }
 }
 
 mod size {
+    use super::borders::BorderType;
     use super::Device;
-    use image::{imageops::FilterType, DynamicImage};
+    use image::{imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer};
 
-    pub fn resize(img: &DynamicImage, device: Device) -> DynamicImage {
+    pub fn resize(img: &DynamicImage, b_type: BorderType, device: Device) -> DynamicImage {
         println!("Resizing to device form factor...");
-        img.resize(device.size().0, device.size().1, FilterType::CatmullRom)
+        let img = img.resize(device.size().0, device.size().1, FilterType::CatmullRom);
+        size_to_fit(&img, device, b_type)
+    }
+
+    fn size_to_fit(img: &DynamicImage, device: Device, b_type: BorderType) -> DynamicImage {
+        let img_dim = img.dimensions();
+        let mut sub_img =
+            ImageBuffer::from_fn(device.size().0, device.size().1, |_, _| match b_type {
+                BorderType::White => image::Rgb([255, 255, 255]),
+                BorderType::Black => image::Rgb([0, 0, 0]),
+            });
+
+        image::imageops::overlay(
+            &mut sub_img,
+            &img.to_rgb8(),
+            (device.size().0 - img_dim.0) / 2,
+            (device.size().1 - img_dim.1) / 2,
+        );
+        DynamicImage::ImageRgb8(sub_img)
     }
 
     impl Device {
@@ -57,12 +84,14 @@ mod bbox {
     use image::{math::Rect, DynamicImage};
     use std::cmp;
 
+    use super::borders::BorderType;
+
     struct Point {
         x: u32,
         y: u32,
     }
 
-    struct Bbox {
+    pub struct Bbox {
         left: u32,
         top: u32,
         right: u32,
@@ -78,6 +107,10 @@ mod bbox {
                 bottom: cmp::min(self.bottom, other.bottom),
             }
         }
+
+        fn px_diff(&self, container_dim: (u32, u32)) -> u32 {
+            container_dim.0 * container_dim.1 - (self.right - self.left) * (self.bottom - self.top)
+        }
     }
 
     impl Into<Rect> for Bbox {
@@ -91,12 +124,19 @@ mod bbox {
         }
     }
 
-    pub fn bbox(img: &DynamicImage, tol: u8) -> Rect {
+    pub fn bbox(img: &DynamicImage, tol: u8) -> (Rect, BorderType) {
         let lu_img: GrayImage = img.grayscale().into_luma8();
         let w_bbox = lu_bbox(&lu_img, true, tol);
         let b_bbox = lu_bbox(&lu_img, false, tol);
 
-        w_bbox.merge_small(b_bbox).into()
+        let b_type = {
+            let img_dim = lu_img.dimensions();
+            match w_bbox.px_diff(img_dim) > b_bbox.px_diff(img_dim) {
+                true => BorderType::White,
+                false => BorderType::Black,
+            }
+        };
+        (w_bbox.merge_small(b_bbox).into(), b_type)
     }
 
     fn lu_bbox(img: &GrayImage, white: bool, tol: u8) -> Bbox {
