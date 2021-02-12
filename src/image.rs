@@ -38,7 +38,7 @@ mod borders {
         Black,
     }
 
-    /// Return a cropped image along with the `BorderColor` that has been detected and cut-out.
+    /// Return a cropped image along with the `BorderColor` that has been detected and cropped-out.
     pub fn cut(img: &DynamicImage) -> (DynamicImage, BorderColor) {
         println!("Calcutating bounds...");
         let bbox = bbox::bbox(&img, 50);
@@ -57,17 +57,14 @@ mod size {
 
     /// Return a resized image matching the specified `Device` size.
     /// Aspect ratio is preserved.
+    ///
+    /// ## Steps
+    /// 1. Resize the image to the desired format by preserving the aspect ratio.
+    /// 2. Create a canvas matching the exact `Device` size and fill it with the specified `BorderColor`.
+    /// 3. Add the source image to the canvas by centering it as an overlay.
     pub fn resize(img: &DynamicImage, b_color: BorderColor, device: Device) -> DynamicImage {
         println!("Resizing to device form factor...");
         let img = img.resize(device.size().0, device.size().1, FilterType::CatmullRom);
-        size_to_fit(&img, device, b_color)
-    }
-
-    /// Return a resized image matching the specified `Device` size.
-    ///
-    /// This function will first create a canvas matching the `Device` size and will fill it with the `BorderType` color.
-    /// It will then add the source image to the canvas as an overlay.
-    fn size_to_fit(img: &DynamicImage, device: Device, b_color: BorderColor) -> DynamicImage {
         let img_dim = img.dimensions();
         let mut sub_img =
             ImageBuffer::from_fn(device.size().0, device.size().1, |_, _| match b_color {
@@ -117,13 +114,13 @@ mod bbox {
     }
 
     impl Bbox {
-        /// Return the biggest `Bbox` possible that can be contain in both compared `Bbox`.
-        fn merge_small(&self, other: Bbox) -> Bbox {
+        /// Return the intersection `Bbox` contained in both `a` and `b`.
+        fn intersection(a: Bbox, b: Bbox) -> Bbox {
             Bbox {
-                left: cmp::max(self.left, other.left),
-                top: cmp::max(self.top, other.top),
-                right: cmp::min(self.right, other.right),
-                bottom: cmp::min(self.bottom, other.bottom),
+                left: cmp::max(a.left, b.left),
+                top: cmp::max(a.top, b.top),
+                right: cmp::min(a.right, b.right),
+                bottom: cmp::min(a.bottom, b.bottom),
             }
         }
 
@@ -160,7 +157,7 @@ mod bbox {
                 false => BorderColor::Black,
             }
         };
-        (w_bbox.merge_small(b_bbox).into(), b_color)
+        (Bbox::intersection(w_bbox, b_bbox).into(), b_color)
     }
 
     /// Return a bounding box ignoring white or black borders.
