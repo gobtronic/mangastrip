@@ -1,5 +1,4 @@
-
-use std::{io, fs, path::Path};
+use std::{fs, io, path::Path};
 
 mod image;
 
@@ -25,7 +24,7 @@ fn process(path: &Path) -> io::Result<()> {
 
 fn process_file(path: &Path) -> bool {
     if !path.is_file() {
-        return false
+        return false;
     }
 
     let _ = fs::create_dir("output/");
@@ -36,11 +35,11 @@ fn process_file(path: &Path) -> bool {
             match img.save(output.clone()) {
                 Ok(_) => {
                     println!("Image saved to {}", output);
-                    return true
+                    true
                 }
-                Err(_) => return false
+                Err(_) => false,
             }
         }
-        Err(_) => return false
+        Err(_) => false,
     }
 }
