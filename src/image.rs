@@ -27,7 +27,7 @@ mod borders {
     pub fn cut(img: &DynamicImage) -> DynamicImage {
         println!("Calcutating bounds...");
         let bbox = bbox::bbox(&img, 50);
-        println!("Removing margins...");
+        println!("Removing borders...");
         img.crop_imm(bbox.x, bbox.y, bbox.width, bbox.height)
     }
 }
@@ -37,8 +37,8 @@ mod size {
     use image::{imageops::FilterType, DynamicImage};
 
     pub fn resize(img: &DynamicImage, device: Device) -> DynamicImage {
-        println!("Resizing...");
-        img.resize(device.size().0, device.size().1, FilterType::Nearest)
+        println!("Resizing to device form factor...");
+        img.resize(device.size().0, device.size().1, FilterType::CatmullRom)
     }
 
     impl Device {
@@ -55,8 +55,12 @@ mod size {
 mod bbox {
     use image::GrayImage;
     use image::{math::Rect, DynamicImage};
-    use imageproc::point::Point;
     use std::cmp;
+
+    struct Point {
+        x: u32,
+        y: u32,
+    }
 
     struct Bbox {
         left: u32,
@@ -104,7 +108,7 @@ mod bbox {
             bottom: 0,
         };
 
-        let mut i = Point::new(0, 0);
+        let mut i = Point { x: 0, y: 0 };
         for pi in img.pixels() {
             if white && pi.0[0] < 255 - tol || !white && pi.0[0] > tol {
                 if coord.left == 0 || i.x < coord.left {
@@ -122,9 +126,9 @@ mod bbox {
             }
 
             if i.x + 2 > dim.0 {
-                i = Point::new(0, i.y + 1);
+                i = Point { x: 0, y: i.y + 1 };
             } else {
-                i = Point::new(i.x + 1, i.y);
+                i = Point { x: i.x + 1, y: i.y };
             }
         }
 
