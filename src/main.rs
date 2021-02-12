@@ -6,6 +6,7 @@ fn main() {
     let _ = process(Path::new("input/"));
 }
 
+/// Process a directory or file at the specified path.
 fn process(path: &Path) -> io::Result<()> {
     if path.is_dir() {
         for entry in fs::read_dir(path)? {
@@ -22,6 +23,8 @@ fn process(path: &Path) -> io::Result<()> {
     Ok(())
 }
 
+/// Process a file at the specified path.
+/// Returns a `bool` indicating if the file has been processed successfully.
 fn process_file(path: &Path) -> bool {
     if !path.is_file() {
         return false;
@@ -38,7 +41,7 @@ fn process_file(path: &Path) -> bool {
                     t.fg(term::color::GREEN).unwrap();
                     writeln!(t, "Image saved to {}", output).unwrap();
                     t.reset().unwrap();
-                    
+
                     true
                 }
                 Err(_) => false,

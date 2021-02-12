@@ -2,12 +2,17 @@ use std::path::Path;
 
 use image::{self, DynamicImage, ImageError};
 
+/// Representation of various ebook readers or tablets form factors.
+///
+/// The `Custom` variant allows you to make a generic device with custom width and height.
 pub enum Device {
     KoboForma,
     KindlePaperwhite,
     Custom(u32, u32),
 }
 
+/// Process an image at the specified path,
+/// returning a modified `DynamicImage` that fits the specified `Device` format.
 pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
@@ -27,12 +32,14 @@ mod borders {
     use super::bbox;
     use image::DynamicImage;
 
-    pub enum BorderType {
+    /// Representation of the color of borders/margins you can find in mangas (black or white)
+    pub enum BorderColor {
         White,
         Black,
     }
 
-    pub fn cut(img: &DynamicImage) -> (DynamicImage, BorderType) {
+    /// Return a cropped image along with the `BorderColor` that has been detected and cut-out.
+    pub fn cut(img: &DynamicImage) -> (DynamicImage, BorderColor) {
         println!("Calcutating bounds...");
         let bbox = bbox::bbox(&img, 50);
         println!("Removing borders...");
@@ -44,22 +51,28 @@ mod borders {
 }
 
 mod size {
-    use super::borders::BorderType;
+    use super::borders::BorderColor;
     use super::Device;
     use image::{imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer};
 
-    pub fn resize(img: &DynamicImage, b_type: BorderType, device: Device) -> DynamicImage {
+    /// Return a resized image matching the specified `Device` size.
+    /// Aspect ratio is preserved.
+    pub fn resize(img: &DynamicImage, b_color: BorderColor, device: Device) -> DynamicImage {
         println!("Resizing to device form factor...");
         let img = img.resize(device.size().0, device.size().1, FilterType::CatmullRom);
-        size_to_fit(&img, device, b_type)
+        size_to_fit(&img, device, b_color)
     }
 
-    fn size_to_fit(img: &DynamicImage, device: Device, b_type: BorderType) -> DynamicImage {
+    /// Return a resized image matching the specified `Device` size.
+    ///
+    /// This function will first create a canvas matching the `Device` size and will fill it with the `BorderType` color.
+    /// It will then add the source image to the canvas as an overlay.
+    fn size_to_fit(img: &DynamicImage, device: Device, b_color: BorderColor) -> DynamicImage {
         let img_dim = img.dimensions();
         let mut sub_img =
-            ImageBuffer::from_fn(device.size().0, device.size().1, |_, _| match b_type {
-                BorderType::White => image::Rgb([255, 255, 255]),
-                BorderType::Black => image::Rgb([0, 0, 0]),
+            ImageBuffer::from_fn(device.size().0, device.size().1, |_, _| match b_color {
+                BorderColor::White => image::Rgb([255, 255, 255]),
+                BorderColor::Black => image::Rgb([0, 0, 0]),
             });
 
         image::imageops::overlay(
@@ -72,6 +85,7 @@ mod size {
     }
 
     impl Device {
+        /// The width and height of the device.
         fn size(&self) -> (u32, u32) {
             match self {
                 Device::KoboForma => (1440, 1920),
@@ -87,13 +101,14 @@ mod bbox {
     use image::{math::Rect, DynamicImage};
     use std::cmp;
 
-    use super::borders::BorderType;
+    use super::borders::BorderColor;
 
     struct Point {
         x: u32,
         y: u32,
     }
 
+    /// A struct representing a bounding box.
     pub struct Bbox {
         left: u32,
         top: u32,
@@ -102,6 +117,7 @@ mod bbox {
     }
 
     impl Bbox {
+        /// Return the biggest `Bbox` possible that can be contain in both compared `Bbox`.
         fn merge_small(&self, other: Bbox) -> Bbox {
             Bbox {
                 left: cmp::max(self.left, other.left),
@@ -111,6 +127,7 @@ mod bbox {
             }
         }
 
+        /// Return the difference in number of pixels between a `Bbox` and its container.
         fn px_diff(&self, container_dim: (u32, u32)) -> u32 {
             container_dim.0 * container_dim.1 - (self.right - self.left) * (self.bottom - self.top)
         }
@@ -127,22 +144,27 @@ mod bbox {
         }
     }
 
-    pub fn bbox(img: &DynamicImage, tol: u8) -> (Rect, BorderType) {
+    /// Return a bounding box and the detected image `BorderColor`.
+    /// The returned bounding box size should be the original image size without its borders.
+    /// Adjust the border color tolerance value (I recommend between 0-50) to your liking.
+    pub fn bbox(img: &DynamicImage, tol: u8) -> (Rect, BorderColor) {
         let lu_img: GrayImage = img.grayscale().into_luma8();
         let w_bbox = lu_bbox(&lu_img, true, tol);
         let b_bbox = lu_bbox(&lu_img, false, tol);
 
         println!("Determining border color...");
-        let b_type = {
+        let b_color = {
             let img_dim = lu_img.dimensions();
             match w_bbox.px_diff(img_dim) > b_bbox.px_diff(img_dim) {
-                true => BorderType::White,
-                false => BorderType::Black,
+                true => BorderColor::White,
+                false => BorderColor::Black,
             }
         };
-        (w_bbox.merge_small(b_bbox).into(), b_type)
+        (w_bbox.merge_small(b_bbox).into(), b_color)
     }
 
+    /// Return a bounding box ignoring white or black borders.
+    /// Adjust the border color tolerance value (I recommend between 0-50) to your liking.
     fn lu_bbox(img: &GrayImage, white: bool, tol: u8) -> Bbox {
         let dim = img.dimensions();
         let mut coord = Bbox {
