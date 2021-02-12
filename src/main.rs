@@ -1,94 +1,46 @@
-use image;
-use image::math::Rect;
-use image::GrayImage;
-use imageproc::point::Point;
+
+use std::{io, fs, path::Path};
+
+mod image;
 
 fn main() {
-    process_image();
+    let _ = process(Path::new("input/"));
 }
 
-fn process_image() {
-    let mut img = image::open("src/001.jpg").unwrap();
-    let lu_img: GrayImage = img.grayscale().into_luma8();
-
-    let bbox = bbox(&lu_img, true, 50);
-    img = img.crop(bbox.x, bbox.y, bbox.width, bbox.height);
-    let _ = img.save("src/001_cut.jpg");
-}
-
-fn bbox(img: &GrayImage, white: bool, tolerance: u8) -> Rect {
-    let dim = img.dimensions();
-    let mut bbox = Rect {
-        x: 0,
-        y: 0,
-        width: 0,
-        height: 0,
-    };
-
-    let mut i = Point::new(0, 0);
-    for pi in img.pixels() {
-        if white && pi.0[0] < 255 - tolerance || !white && pi.0[0] > 0 + tolerance {
-            if bbox.x != 0 && i.x < bbox.x {
-                bbox = Rect {
-                    x: i.x,
-                    y: bbox.y,
-                    width: bbox.x - i.x + bbox.width,
-                    height: bbox.height,
-                };
-            } else if bbox.x == 0 {
-                bbox = Rect {
-                    x: i.x,
-                    y: bbox.y,
-                    width: bbox.width,
-                    height: bbox.height,
-                };
-            }
-
-            if bbox.x > 0 {
-                if bbox.x + bbox.width < i.x {
-                    bbox = Rect {
-                        x: bbox.x,
-                        y: bbox.y,
-                        width: i.x - bbox.x,
-                        height: bbox.height,
-                    };
-                }
-            }
-
-            if bbox.y != 0 && i.y < bbox.y {
-                bbox = Rect {
-                    x: bbox.x,
-                    y: i.y,
-                    width: bbox.width,
-                    height: bbox.y - i.y + bbox.height,
-                };
-            } else if bbox.y == 0 {
-                bbox = Rect {
-                    x: bbox.x,
-                    y: i.y,
-                    width: bbox.width,
-                    height: bbox.height,
-                };
-            }
-
-            if bbox.y > 0 {
-                if bbox.y + bbox.height < i.y {
-                    bbox = Rect {
-                        x: bbox.x,
-                        y: bbox.y,
-                        width: bbox.width,
-                        height: i.y - bbox.y,
-                    };
+fn process(path: &Path) -> io::Result<()> {
+    if path.is_dir() {
+        for entry in fs::read_dir(path)? {
+            if let Ok(entry) = entry {
+                if entry.path().is_file() {
+                    process_file(&entry.path());
                 }
             }
         }
-
-        if i.x + 2 > dim.0 {
-            i = Point::new(0, i.y + 1);
-        } else {
-            i = Point::new(i.x + 1, i.y);
-        }
+    } else if path.is_file() {
+        process_file(path);
     }
 
-    bbox
+    Ok(())
+}
+
+fn process_file(path: &Path) -> bool {
+    if !path.is_file() {
+        return false
+    }
+
+    let _ = fs::create_dir("output/");
+    match image::process_image(path) {
+        Ok(img) => {
+            let filename = path.file_name().unwrap().to_str().unwrap();
+            let output = format!("output/{}", filename);
+            match img.save(output.clone()) {
+                Ok(_) => {
+                    println!("Image saved to {}", output);
+                    return true
+                }
+                Err(_) => return false
+            }
+        }
+        Err(_) => return false
+    }
 }
