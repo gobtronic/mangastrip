@@ -129,6 +129,7 @@ mod bbox {
         let w_bbox = lu_bbox(&lu_img, true, tol);
         let b_bbox = lu_bbox(&lu_img, false, tol);
 
+        println!("Determining border color...");
         let b_type = {
             let img_dim = lu_img.dimensions();
             match w_bbox.px_diff(img_dim) > b_bbox.px_diff(img_dim) {
