@@ -12,12 +12,26 @@ mod tests;
 fn main() {
     let opt: Opt = Opt::parse();
     let in_path = Path::new(&opt.input);
+    if !in_path.exists() {
+        println!();
+        let mut t = term::stdout().unwrap();
+        t.fg(term::color::RED).unwrap();
+        let _ = writeln!(t, "Input doesn't exist");
+        t.reset().unwrap();
+        exit(1)
+    }
+
     let out_path = match opt.output_dir {
         Some(p) => p,
         None => {
             // TODO: This is ugly
             if in_path.is_file() {
-                in_path.parent().unwrap().to_str().unwrap().to_string()
+                let mut p = in_path.parent().unwrap().to_str().unwrap().to_string();
+                if p == "" {
+                    p = "./".to_string();
+                }
+
+                p
             } else {
                 in_path.to_str().unwrap().to_string()
             }
@@ -33,6 +47,7 @@ fn main() {
         exit(1)
     }
     if !out_path.exists() {
+        println!("{:?}", out_path);
         if create_dir(out_path).is_err() {
             println!();
             let mut t = term::stdout().unwrap();
