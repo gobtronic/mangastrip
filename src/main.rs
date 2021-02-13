@@ -37,7 +37,10 @@ fn main() {
             println!();
             let mut t = term::stdout().unwrap();
             t.fg(term::color::RED).unwrap();
-            let _ = writeln!(t, "An error occured while trying to create output directory");
+            let _ = writeln!(
+                t,
+                "An error occured while trying to create output directory"
+            );
             t.reset().unwrap();
             exit(1)
         }
