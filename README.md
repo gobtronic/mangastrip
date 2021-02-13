@@ -1,7 +1,7 @@
 # robostrip
 ![main](https://github.com/gobtronic/robostrip/workflows/build/badge.svg?branch=main) ![dev](https://github.com/gobtronic/robostrip/workflows/build/badge.svg?branch=dev)
 
-robostrip is a manga optimizer tool that allows you to optimize your files for your favorite ereader / reading device. 
+robostrip is a manga files optimizer tool that allows you to optimize pages for your favorite ereader / reading device. 
 
 It's heavily inspired by [KCC](https://github.com/ciromattia/kcc) and made in 🦀 !
 
