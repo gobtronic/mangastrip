@@ -2,6 +2,9 @@ use std::{fs, io, path::Path};
 
 mod image;
 
+#[cfg(test)]
+mod tests;
+
 fn main() {
     let _ = process(Path::new("input/"));
 }

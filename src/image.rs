@@ -24,14 +24,15 @@ pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
 
     let img = image::open(path)?;
     let img = borders::cut(&img);
-    let img = size::resize(&img.0, img.1, Device::KoboForma);
+    let img = size::resize(&img.0, img.1, &Device::KoboForma);
     Ok(img)
 }
 
-mod borders {
+pub mod borders {
     use super::bbox;
     use image::DynamicImage;
 
+    #[derive(PartialEq)]
     /// Representation of the color of borders/margins you can find in mangas (black or white)
     pub enum BorderColor {
         White,
@@ -50,7 +51,7 @@ mod borders {
     }
 }
 
-mod size {
+pub mod size {
     use super::borders::BorderColor;
     use super::Device;
     use image::{imageops::FilterType, DynamicImage, GenericImageView, ImageBuffer};
@@ -62,7 +63,7 @@ mod size {
     /// 1. Resize the image to the desired format by preserving the aspect ratio.
     /// 2. Create a canvas matching the exact `Device` size and fill it with the specified `BorderColor`.
     /// 3. Add the source image to the canvas by centering it as an overlay.
-    pub fn resize(img: &DynamicImage, b_color: BorderColor, device: Device) -> DynamicImage {
+    pub fn resize(img: &DynamicImage, b_color: BorderColor, device: &Device) -> DynamicImage {
         println!("Resizing to device form factor...");
         let img = img.resize(device.size().0, device.size().1, FilterType::CatmullRom);
         let img_dim = img.dimensions();
@@ -83,7 +84,7 @@ mod size {
 
     impl Device {
         /// The width and height of the device.
-        fn size(&self) -> (u32, u32) {
+        pub fn size(&self) -> (u32, u32) {
             match self {
                 Device::KoboForma => (1440, 1920),
                 Device::KindlePaperwhite => (1080, 1920),
@@ -93,29 +94,31 @@ mod size {
     }
 }
 
-mod bbox {
+pub mod bbox {
     use image::GrayImage;
     use image::{math::Rect, DynamicImage};
     use std::cmp;
 
     use super::borders::BorderColor;
 
+    /// It's a point.
     struct Point {
         x: u32,
         y: u32,
     }
 
     /// A struct representing a bounding box.
+    #[derive(PartialEq)]
     pub struct Bbox {
-        left: u32,
-        top: u32,
-        right: u32,
-        bottom: u32,
+        pub left: u32,
+        pub top: u32,
+        pub right: u32,
+        pub bottom: u32,
     }
 
     impl Bbox {
         /// Return the intersection `Bbox` contained in both `a` and `b`.
-        fn intersection(a: Bbox, b: Bbox) -> Bbox {
+        pub fn intersection(a: Bbox, b: Bbox) -> Bbox {
             Bbox {
                 left: cmp::max(a.left, b.left),
                 top: cmp::max(a.top, b.top),
