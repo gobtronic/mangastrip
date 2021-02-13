@@ -1,19 +1,20 @@
-use std::path::Path;
-
 use image::{self, DynamicImage, ImageError};
+use std::path::Path;
 
 /// Representation of various ebook readers or tablets form factors.
 ///
 /// The `Custom` variant allows you to make a generic device with custom width and height.
+#[derive(Copy, Clone)]
+#[allow(dead_code)]
 pub enum Device {
-    KoboForma,
     KindlePaperwhite,
+    KoboForma,
     Custom(u32, u32),
 }
 
 /// Process an image at the specified path,
 /// returning a modified `DynamicImage` that fits the specified `Device` format.
-pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
+pub fn process_image(path: &Path, device: &Device) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
         let mut t = term::stdout().unwrap();
@@ -24,7 +25,7 @@ pub fn process_image(path: &Path) -> Result<DynamicImage, ImageError> {
 
     let img = image::open(path)?;
     let img = borders::cut(&img);
-    let img = size::resize(&img.0, img.1, &Device::KoboForma);
+    let img = size::resize(&img.0, img.1, device);
     Ok(img)
 }
 
@@ -133,13 +134,13 @@ pub mod bbox {
         }
     }
 
-    impl Into<Rect> for Bbox {
-        fn into(self) -> Rect {
+    impl From<Bbox> for Rect {
+        fn from(b: Bbox) -> Self {
             Rect {
-                x: self.left,
-                y: self.top,
-                width: self.right - self.left,
-                height: self.bottom - self.top,
+                x: b.left,
+                y: b.top,
+                width: b.right - b.left,
+                height: b.bottom - b.top,
             }
         }
     }

@@ -1,55 +1,100 @@
-use std::{fs, io, path::Path};
+use crate::image::Device;
+use clap::Clap;
+use opt::Opt;
+use std::{fs::create_dir, path::Path, process::exit};
 
 mod image;
+mod opt;
 
 #[cfg(test)]
 mod tests;
 
 fn main() {
-    let _ = process(Path::new("input/"));
-}
-
-/// Process a directory or file at the specified path.
-fn process(path: &Path) -> io::Result<()> {
-    if path.is_dir() {
-        for entry in fs::read_dir(path)? {
-            if let Ok(entry) = entry {
-                if entry.path().is_file() {
-                    process_file(&entry.path());
-                }
+    let opt: Opt = Opt::parse();
+    let in_path = Path::new(&opt.input);
+    let out_path = match opt.output_dir {
+        Some(p) => p,
+        None => {
+            // TODO: This is ugly
+            if in_path.is_file() {
+                in_path.parent().unwrap().to_str().unwrap().to_string()
+            } else {
+                in_path.to_str().unwrap().to_string()
             }
         }
-    } else if path.is_file() {
-        process_file(path);
+    };
+    let out_path = Path::new(&out_path);
+    if out_path.is_file() {
+        println!();
+        let mut t = term::stdout().unwrap();
+        t.fg(term::color::RED).unwrap();
+        let _ = writeln!(t, "Output should be a directory");
+        t.reset().unwrap();
+        exit(1)
+    }
+    if !out_path.exists() {
+        if create_dir(out_path).is_err() {
+            println!();
+            let mut t = term::stdout().unwrap();
+            t.fg(term::color::RED).unwrap();
+            let _ = writeln!(t, "An error occured while trying to create output directory");
+            t.reset().unwrap();
+            exit(1)
+        }
     }
 
-    Ok(())
+    let device = Device::Custom(opt.width, opt.height);
+
+    let _ = process::process(in_path, out_path, &device);
 }
 
-/// Process a file at the specified path.
-/// Returns a `bool` indicating if the file has been processed successfully.
-fn process_file(path: &Path) -> bool {
-    if !path.is_file() {
-        return false;
+mod process {
+    use crate::image::{self, Device};
+    use std::{fs, io, path::Path};
+
+    /// Process a directory or file at the specified path.
+    pub fn process(in_path: &Path, out_path: &Path, device: &Device) -> io::Result<()> {
+        if in_path.is_dir() {
+            for entry in fs::read_dir(in_path)? {
+                if let Ok(entry) = entry {
+                    if entry.path().is_file() {
+                        process_file(&entry.path(), out_path, device);
+                    }
+                }
+            }
+        } else if in_path.is_file() {
+            process_file(in_path, out_path, device);
+        }
+
+        Ok(())
     }
 
-    let _ = fs::create_dir("output/");
-    match image::process_image(path) {
-        Ok(img) => {
-            let filename = path.file_name().unwrap().to_str().unwrap();
-            let output = format!("output/{}", filename);
-            match img.save(output.clone()) {
-                Ok(_) => {
-                    let mut t = term::stdout().unwrap();
-                    t.fg(term::color::GREEN).unwrap();
-                    writeln!(t, "Image saved to {}", output).unwrap();
-                    t.reset().unwrap();
-
-                    true
-                }
-                Err(_) => false,
-            }
+    /// Process a file at the specified path.
+    /// Returns a `bool` indicating if the file has been processed successfully.
+    fn process_file(f_path: &Path, out_path: &Path, device: &Device) -> bool {
+        if !f_path.is_file() {
+            return false;
         }
-        Err(_) => false,
+
+        let _ = fs::create_dir("output/");
+        match image::process_image(f_path, device) {
+            Ok(img) => {
+                // TODO: This is ugly
+                let filename = f_path.file_name().unwrap().to_str().unwrap();
+                let out_path = out_path.join("opt_".to_owned() + filename);
+                match img.save(out_path) {
+                    Ok(_) => {
+                        let mut t = term::stdout().unwrap();
+                        t.fg(term::color::GREEN).unwrap();
+                        let _ = writeln!(t, "Optimized image saved!");
+                        t.reset().unwrap();
+
+                        true
+                    }
+                    Err(_) => false,
+                }
+            }
+            Err(_) => false,
+        }
     }
 }
