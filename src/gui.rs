@@ -116,9 +116,6 @@ mod file {
         Delete,
     }
 
-    #[derive(Debug, Clone)]
-    pub struct FileState {}
-
     impl File {
         pub fn new(path: PathBuf) -> Self {
             File {
