@@ -285,6 +285,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7282d924be3275cec7f6756ff4121987bc6481325397dde6ba3e7802b1a8b1c"
 
 [[package]]
+name = "mangastrip"
+version = "0.1.0"
+dependencies = [
+ "clap",
+ "image",
+ "term",
+]
+
+[[package]]
 name = "memoffset"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -465,15 +474,6 @@ checksum = "528532f3d801c87aec9def2add9ca802fe569e44a544afe633765267840abe64"
 dependencies = [
  "getrandom",
  "redox_syscall",
-]
-
-[[package]]
-name = "robostrip"
-version = "0.1.0"
-dependencies = [
- "clap",
- "image",
- "term",
 ]
 
 [[package]]

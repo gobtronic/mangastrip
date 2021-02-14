@@ -1,5 +1,5 @@
 [package]
-name = "robostrip"
+name = "mangastrip"
 version = "0.1.0"
 authors = ["gobtronic"]
 edition = "2018"
