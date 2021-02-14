@@ -1,8 +1,10 @@
 use crate::image::Device;
 use clap::Clap;
+use iced::{Application, Settings};
 use opt::Opt;
 use std::{fs::create_dir, path::Path, process::exit};
 
+mod gui;
 mod image;
 mod opt;
 
@@ -10,7 +12,9 @@ mod opt;
 mod tests;
 
 fn main() {
-    let opt: Opt = Opt::parse();
+    let _ = gui::Input::run(Settings::default());
+
+    /*let opt: Opt = Opt::parse();
     let in_path = Path::new(&opt.input);
     if !in_path.exists() {
         println!();
@@ -63,7 +67,7 @@ fn main() {
 
     let device = Device::Custom(opt.width, opt.height);
 
-    let _ = process::process(in_path, out_path, &device);
+    let _ = process::process(in_path, out_path, &device);*/
 }
 
 mod process {
