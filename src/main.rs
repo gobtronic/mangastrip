@@ -12,7 +12,7 @@ mod opt;
 mod tests;
 
 fn main() {
-    let _ = gui::Input::run(Settings::default());
+    let _ = gui::app::App::run(Settings::default());
     /*let opt: Opt = Opt::parse();
     let in_path = Path::new(&opt.input);
     if !in_path.exists() {
