@@ -1,7 +1,7 @@
 pub mod app {
     use super::file::{File, FileMessage};
     use crate::image::{self, Device};
-    use iced::{button, Button, Column, Element, Row, Sandbox, Text};
+    use iced::{button, Button, Column, Element, Length, Row, Sandbox, Text};
     use rfd::FileDialog;
     use std::path::Path;
 
@@ -26,7 +26,7 @@ pub mod app {
             let select_button = Button::new(&mut self.input_button, Text::new("Select files"))
                 .on_press(AppMessage::InputPressed);
             let files_list = self.files.iter_mut().enumerate().fold(
-                Column::new().spacing(20),
+                Column::new().spacing(10),
                 |column, (i, file)| {
                     column.push(
                         file.view()
@@ -39,14 +39,19 @@ pub mod app {
                 .padding(15)
                 .push(
                     Row::new()
-                        .push(Column::new().push(select_button))
+                        .width(Length::Fill)
+                        .height(Length::Fill)
                         .push(Column::new().push(files_list)),
                 )
                 .push(
-                    Row::new().push(
-                        Button::new(&mut self.convert_button, Text::new("Convert"))
-                            .on_press(AppMessage::ConvertPressed),
-                    ),
+                    Row::new()
+                        .width(Length::Fill)
+                        .spacing(10)
+                        .push(Column::new().push(select_button))
+                        .push(
+                            Button::new(&mut self.convert_button, Text::new("Convert"))
+                                .on_press(AppMessage::ConvertPressed),
+                        ),
                 )
                 .into()
         }
@@ -102,9 +107,9 @@ pub mod app {
 }
 
 mod file {
-    use std::path::PathBuf;
-    use iced::{button, Align, Button, Element, Row, Text};
     use super::style;
+    use iced::{button, Align, Button, Color, Element, Length, Row, Text};
+    use std::path::PathBuf;
 
     pub struct File {
         pub path: PathBuf,
@@ -125,10 +130,12 @@ mod file {
         }
 
         pub fn view(&mut self) -> Element<FileMessage> {
-            let text = Text::new(self.path.to_str().unwrap());
-            let delete_button = Button::new(&mut self.delete_button, Text::new("Delete"))
+            let text = Text::new(self.path.to_str().unwrap())
+                .color(Color::WHITE)
+                .width(Length::Fill);
+            let delete_button = Button::new(&mut self.delete_button, Text::new("✕"))
                 .on_press(FileMessage::Delete)
-                .padding(10)
+                //.padding(10)
                 .style(style::Button::Destructive);
 
             Row::new()
@@ -161,15 +168,31 @@ mod style {
             }
         }
 
+        fn pressed(&self) -> button::Style {
+            let active = self.active();
+
+            match self {
+                Button::Destructive => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.6, 0.15, 0.15))),
+                    border_radius: active.border_radius,
+                    text_color: active.text_color,
+                    shadow_offset: active.shadow_offset,
+                    ..active
+                },
+            }
+        }
+
         fn hovered(&self) -> button::Style {
             let active = self.active();
 
-            button::Style {
-                text_color: match self {
-                    _ => active.text_color,
+            match self {
+                Button::Destructive => button::Style {
+                    background: Some(Background::Color(Color::from_rgb(0.85, 0.25, 0.25))),
+                    border_radius: active.border_radius,
+                    text_color: active.text_color,
+                    shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
+                    ..active
                 },
-                shadow_offset: active.shadow_offset + Vector::new(0.0, 1.0),
-                ..active
             }
         }
     }

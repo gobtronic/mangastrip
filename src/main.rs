@@ -1,6 +1,6 @@
 use crate::image::Device;
 use clap::Clap;
-use iced::{Application, Settings};
+use iced::{window, Application, Settings};
 use opt::Opt;
 use std::{fs::create_dir, path::Path, process::exit};
 
@@ -12,7 +12,27 @@ mod opt;
 mod tests;
 
 fn main() {
-    let _ = gui::app::App::run(Settings::default());
+    let win_set = window::Settings {
+        size: (500, 400),
+        min_size: None,
+        max_size: None,
+        resizable: false,
+        decorations: true,
+        transparent: false,
+        always_on_top: false,
+        icon: None,
+    };
+
+    let default_set: Settings<()> = Settings::default();
+    let settings = Settings {
+        window: win_set,
+        flags: (),
+        default_font: default_set.default_font,
+        default_text_size: 16,
+        antialiasing: default_set.antialiasing,
+    };
+
+    let _ = gui::app::App::run(settings);
     /*let opt: Opt = Opt::parse();
     let in_path = Path::new(&opt.input);
     if !in_path.exists() {
