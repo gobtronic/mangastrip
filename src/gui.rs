@@ -138,12 +138,13 @@ mod file {
         }
 
         pub fn view(&mut self) -> Element<FileMessage> {
-            let text = Text::new(self.path.to_str().unwrap())
+            // TODO: This is ugly
+            let filename = self.path.file_name().unwrap().to_str().unwrap();
+            let text = Text::new(filename)
                 .color(Color::WHITE)
                 .width(Length::Fill);
             let delete_button = Button::new(&mut self.delete_button, Text::new("✕"))
                 .on_press(FileMessage::Delete)
-                //.padding(10)
                 .style(style::Button::Destructive);
 
             Row::new()
