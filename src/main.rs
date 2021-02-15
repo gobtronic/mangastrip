@@ -29,7 +29,7 @@ fn main() {
         flags: (),
         default_font: default_set.default_font,
         default_text_size: 16,
-        antialiasing: default_set.antialiasing,
+        antialiasing: true,
     };
 
     let _ = gui::app::App::run(settings);
