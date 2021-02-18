@@ -1,17 +1,16 @@
-name: build
+name: Dev
 
 on:
   push:
-    branches: [ main, dev ]
+    branches: [ dev ]
   pull_request:
-    branches: [ main, dev ]
+    branches: [ dev ]
 
 env:
   CARGO_TERM_COLOR: always
 
 jobs:
-  build:
-
+  tests:
     runs-on: ubuntu-latest
 
     steps:
