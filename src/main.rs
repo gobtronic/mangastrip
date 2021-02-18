@@ -70,7 +70,7 @@ mod process {
     use crate::image::{self, Device};
     use std::{fs, io, path::Path};
 
-    /// Process a directory or file at the specified path.
+    /// Process a directory or file at the specified path for the specified `Device`.
     pub fn process(in_path: &Path, out_path: &Path, device: &Device) -> io::Result<()> {
         if in_path.is_dir() {
             for entry in fs::read_dir(in_path)? {
@@ -87,7 +87,7 @@ mod process {
         Ok(())
     }
 
-    /// Process a file at the specified path.
+    /// Process a file at the specified path for the specified `Device`.
     /// Returns a `bool` indicating if the file has been processed successfully.
     fn process_file(f_path: &Path, out_path: &Path, device: &Device) -> bool {
         if !f_path.is_file() {
