@@ -3,8 +3,9 @@ use clap::Clap;
 use opt::Opt;
 use std::{fs::create_dir, path::Path, process::exit};
 
-mod image;
 mod opt;
+mod input;
+mod image;
 
 #[cfg(test)]
 mod tests;
@@ -12,6 +13,7 @@ mod tests;
 fn main() {
     let opt: Opt = Opt::parse();
     let in_path = Path::new(&opt.input);
+    
     if !in_path.exists() {
         println!();
         let mut t = term::stdout().unwrap();
@@ -21,23 +23,33 @@ fn main() {
         exit(1)
     }
 
-    let out_path = match opt.output_dir {
-        Some(p) => p,
+    let out_path: Option<&str> = match opt.output_dir {
+        Some(ref p) => Some(p),
         None => {
-            // TODO: This is ugly
             if in_path.is_file() {
-                let mut p = in_path.parent().unwrap().to_str().unwrap().to_string();
-                if p == "" {
-                    p = "./".to_string();
-                }
+                match in_path.parent() {
+                    Some(p) => {
+                        let p = p.as_ref();
+                        if let Some(p) = p {
+                            if p == "" {
+                                p = "./";
+                                return p
+                            }
+                        }
+                            
 
-                p
+                        p
+                    }
+                    None => None
+                }
             } else {
-                in_path.to_str().unwrap().to_string()
+                in_path.to_str()
             }
         }
     };
+
     let out_path = Path::new(&out_path);
+    
     if out_path.is_file() {
         println!();
         let mut t = term::stdout().unwrap();
@@ -62,57 +74,5 @@ fn main() {
     }
 
     let device = Device::Custom(opt.width, opt.height);
-
-    let _ = process::process(in_path, out_path, &device);
-}
-
-mod process {
-    use crate::image::{self, Device};
-    use std::{fs, io, path::Path};
-
-    /// Process a directory or file at the specified path for the specified `Device`.
-    pub fn process(in_path: &Path, out_path: &Path, device: &Device) -> io::Result<()> {
-        if in_path.is_dir() {
-            for entry in fs::read_dir(in_path)? {
-                if let Ok(entry) = entry {
-                    if entry.path().is_file() {
-                        process_file(&entry.path(), out_path, device);
-                    }
-                }
-            }
-        } else if in_path.is_file() {
-            process_file(in_path, out_path, device);
-        }
-
-        Ok(())
-    }
-
-    /// Process a file at the specified path for the specified `Device`.
-    /// Returns a `bool` indicating if the file has been processed successfully.
-    fn process_file(f_path: &Path, out_path: &Path, device: &Device) -> bool {
-        if !f_path.is_file() {
-            return false;
-        }
-
-        let _ = fs::create_dir("output/");
-        match image::process_image(f_path, device) {
-            Ok(img) => {
-                // TODO: This is ugly
-                let filename = f_path.file_name().unwrap().to_str().unwrap();
-                let out_path = out_path.join("opt_".to_owned() + filename);
-                match img.save(out_path) {
-                    Ok(_) => {
-                        let mut t = term::stdout().unwrap();
-                        t.fg(term::color::GREEN).unwrap();
-                        let _ = writeln!(t, "Optimized image saved!");
-                        t.reset().unwrap();
-
-                        true
-                    }
-                    Err(_) => false,
-                }
-            }
-            Err(_) => false,
-        }
-    }
+    let _ = input::process(in_path, out_path, &device);
 }
