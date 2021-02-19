@@ -1,3 +1,4 @@
+use crate::logger;
 use image::{self, DynamicImage, ImageError};
 use std::path::Path;
 
@@ -12,15 +13,15 @@ pub enum Device {
     Custom(u32, u32),
 }
 
-/// Process an image at the specified path,
+/// Process an image at the specified path for the specified `Device`,
 /// returning a modified `DynamicImage` that fits the specified `Device` format.
 pub fn process_image(path: &Path, device: &Device) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
-        let mut t = term::stdout().unwrap();
-        t.fg(term::color::YELLOW).unwrap();
-        writeln!(t, "Starting {} conversion", p_str).unwrap();
-        t.reset().unwrap();
+        logger::print(
+            &format!("Starting {} conversion", p_str),
+            logger::Type::Warning,
+        );
     }
 
     let img = image::open(path)?;
