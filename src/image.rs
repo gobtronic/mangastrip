@@ -15,7 +15,7 @@ pub enum Device {
 
 /// Process an image at the specified path for the specified `Device`,
 /// returning a modified `DynamicImage` that fits the specified `Device` format.
-pub fn process_image(path: &Path, device: &Device) -> Result<DynamicImage, ImageError> {
+pub fn process(path: &Path, device: &Device) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
         logger::print(

@@ -1,8 +1,19 @@
+use std::ffi::OsStr;
+
+use self::input::FileFormat;
+
 pub mod input {
     use crate::image::{self, Device};
     use std::{fs, io, path::Path};
+    use super::ExtFormat;
+    
+    pub enum FileFormat {
+        Image,
+        Archive,
+        Unsupported
+    }
 
-    /// Process a directory or file at the specified path for the specified `Device`.
+    /// Start processing the file or directory at the specified path for the specified `Device`.
     pub fn process(in_path: &Path, out_path: &Path, device: &Device) -> io::Result<()> {
         if in_path.is_dir() {
             for entry in fs::read_dir(in_path)? {
@@ -12,22 +23,33 @@ pub mod input {
                     }
                 }
             }
-        } else if in_path.is_file() {
+        } else {
             process_file(in_path, out_path, device);
         }
 
         Ok(())
     }
 
-    /// Process a file at the specified path for the specified `Device`.
-    /// Returns a `bool` indicating if the file has been processed successfully.
-    fn process_file(f_path: &Path, out_path: &Path, device: &Device) -> bool {
+    /// Process the supported file at the specified path for the specified `Device`.
+    fn process_file(f_path: &Path, out_path: &Path, device: &Device) {
+        if let Some(f_ext) = f_path.extension() {
+            match f_ext.file_format() {                
+                FileFormat::Image => process_image(f_path, out_path, device),
+                FileFormat::Archive => process_archive(f_path, out_path, device),
+                FileFormat::Unsupported => false
+            };
+        }
+    }
+
+    /// Process an image at the specified path for the specified `Device`.
+    /// Returns a `bool` indicating if the image has been processed successfully.
+    fn process_image(f_path: &Path, out_path: &Path, device: &Device) -> bool {
         if !f_path.is_file() {
             return false;
         }
 
         let _ = fs::create_dir("output/");
-        match image::process_image(f_path, device) {
+        match image::process(f_path, device) {
             Ok(img) => {
                 // TODO: This is ugly
                 let filename = f_path.file_name().unwrap().to_str().unwrap();
@@ -46,6 +68,16 @@ pub mod input {
             }
             Err(_) => false,
         }
+    }
+
+    /// Process an archive at the specified path for the specified `Device`.
+    /// Returns a `bool` indicating if the archive has been processed successfully.
+    fn process_archive(f_path: &Path, out_path: &Path, device: &Device) -> bool {
+        if !f_path.is_file() {
+            return false;
+        }
+
+        let _ = fs::create_dir("output/");
     }
 }
 
@@ -91,5 +123,31 @@ pub mod output {
         };
 
         Some(Path::new(out_path))
+    }
+}
+
+trait ExtFormat {
+    fn is_image(&self) -> bool;
+    fn is_archive(&self) -> bool;
+    fn file_format(&self) -> FileFormat;
+}
+
+impl ExtFormat for OsStr {
+    fn is_image(&self) -> bool {
+        self == "png" || self == "jpg"
+    }
+
+    fn is_archive(&self) -> bool {
+        self == "zip" || self == "rar" || self == "cbz" || self == "cbr"
+    }
+
+    fn file_format(&self) -> FileFormat {
+        if self.is_image() {
+            return FileFormat::Image;
+        } else if self.is_archive() {
+            return FileFormat::Archive;
+        }
+
+        FileFormat::Unsupported
     }
 }
