@@ -25,7 +25,7 @@ fn main() {
             logger::println("Output should be a directory", logger::Type::Error);
             exit(1)
         }
-        if !out_path.exists() && create_dir(out_path).is_err() {
+        if !out_path.exists() && create_dir(&out_path).is_err() {
             logger::println(
                 "An error occured while trying to create output directory",
                 logger::Type::Error,
@@ -34,7 +34,7 @@ fn main() {
         }
 
         let device = Device::Custom(opt.width, opt.height);
-        let _ = io::input::process(in_path, out_path, &device);
+        let _ = io::input::process(&in_path.to_path_buf(), &out_path.to_path_buf(), &device);
     } else {
         logger::println(
             "An error occured while trying to build output path",

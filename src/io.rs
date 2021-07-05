@@ -3,23 +3,30 @@ use std::ffi::OsStr;
 use self::input::FileFormat;
 
 pub mod input {
-    use crate::image::{self, Device};
-    use std::{fs, io, path::Path};
     use super::ExtFormat;
-    
+    use crate::{
+        image::{self, Device},
+        logger,
+    };
+    use std::{
+        fs::{self, create_dir},
+        io,
+        path::{Path, PathBuf},
+    };
+
     pub enum FileFormat {
         Image,
         Archive,
-        Unsupported
+        Unsupported,
     }
 
     /// Start processing the file or directory at the specified path for the specified `Device`.
-    pub fn process(in_path: &Path, out_path: &Path, device: &Device) -> io::Result<()> {
+    pub fn process(in_path: &PathBuf, out_path: &PathBuf, device: &Device) -> io::Result<()> {
         if in_path.is_dir() {
             for entry in fs::read_dir(in_path)? {
                 if let Ok(entry) = entry {
                     if entry.path().is_file() {
-                        process_file(&entry.path(), out_path, device);
+                        process_file(&entry.path(), &out_path, device);
                     }
                 }
             }
@@ -31,36 +38,31 @@ pub mod input {
     }
 
     /// Process the supported file at the specified path for the specified `Device`.
-    fn process_file(f_path: &Path, out_path: &Path, device: &Device) {
+    fn process_file(f_path: &PathBuf, out_path: &PathBuf, device: &Device) {
         if let Some(f_ext) = f_path.extension() {
-            match f_ext.file_format() {                
+            match f_ext.file_format() {
                 FileFormat::Image => process_image(f_path, out_path, device),
                 FileFormat::Archive => process_archive(f_path, out_path, device),
-                FileFormat::Unsupported => false
+                FileFormat::Unsupported => false,
             };
         }
     }
 
     /// Process an image at the specified path for the specified `Device`.
     /// Returns a `bool` indicating if the image has been processed successfully.
-    fn process_image(f_path: &Path, out_path: &Path, device: &Device) -> bool {
+    fn process_image(f_path: &PathBuf, out_path: &PathBuf, device: &Device) -> bool {
         if !f_path.is_file() {
             return false;
         }
 
-        let _ = fs::create_dir("output/");
-        match image::process(f_path, device) {
+        match image::process(&f_path, device) {
             Ok(img) => {
                 // TODO: This is ugly
                 let filename = f_path.file_name().unwrap().to_str().unwrap();
                 let out_path = out_path.join("opt_".to_owned() + filename);
                 match img.save(out_path) {
                     Ok(_) => {
-                        let mut t = term::stdout().unwrap();
-                        t.fg(term::color::GREEN).unwrap();
-                        let _ = writeln!(t, "Optimized image saved!");
-                        t.reset().unwrap();
-
+                        logger::println("Optimized image saved!", logger::Type::Success);
                         true
                     }
                     Err(_) => false,
@@ -72,12 +74,26 @@ pub mod input {
 
     /// Process an archive at the specified path for the specified `Device`.
     /// Returns a `bool` indicating if the archive has been processed successfully.
-    fn process_archive(f_path: &Path, out_path: &Path, device: &Device) -> bool {
+    fn process_archive(f_path: &PathBuf, out_path: &PathBuf, device: &Device) -> bool {
         if !f_path.is_file() {
             return false;
         }
 
-        let _ = fs::create_dir("output/");
+        let archive = fs::File::open(&f_path).unwrap();
+        let mut zip = zip::ZipArchive::new(archive).unwrap();
+
+        let _ = create_dir("tmp/");
+        if zip.extract(Path::new("tmp/")).is_ok() {
+            process(&Path::new("tmp/").to_path_buf(), out_path, &device);
+        } else {
+            logger::println(
+                "An error occured while extracting the provided input file!",
+                logger::Type::Error,
+            );
+            return false;
+        }
+
+        true
     }
 }
 
@@ -96,12 +112,9 @@ pub mod output {
     /// return `opt.input`
     /// #### 4. Some error occured while parsing paths    
     /// return `None`
-    pub fn build(opt: &opt::Opt) -> Option<&Path> {
+    pub fn build(opt: &opt::Opt) -> Option<std::path::PathBuf> {
         let out_path = match opt.output_dir {
-            Some(ref p) => {
-                println!("on devrait être là frero");
-                p
-            }
+            Some(ref p) => p,
             None => {
                 let in_path = Path::new(&opt.input);
                 if in_path.is_file() {
@@ -112,17 +125,18 @@ pub mod output {
                                 p => p,
                             };
 
-                            return Some(Path::new(p));
+                            let path = Path::new(p);
+                            return Some(path.join("mangastrip_output"));
                         }
                         None => None,
                     };
                 } else {
-                    return Some(in_path);
+                    return Some(in_path.join("mangastrip_output"));
                 }
             }
         };
 
-        Some(Path::new(out_path))
+        Some(Path::new(out_path).join("mangastrip_output"))
     }
 }
 

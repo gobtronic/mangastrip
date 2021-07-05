@@ -1,6 +1,6 @@
 use crate::logger;
 use image::{self, DynamicImage, ImageError};
-use std::path::Path;
+use std::path::{Path, PathBuf};
 
 /// Representation of various ebook readers or tablets form factors.
 ///
@@ -15,7 +15,7 @@ pub enum Device {
 
 /// Process an image at the specified path for the specified `Device`,
 /// returning a modified `DynamicImage` that fits the specified `Device` format.
-pub fn process(path: &Path, device: &Device) -> Result<DynamicImage, ImageError> {
+pub fn process(path: &PathBuf, device: &Device) -> Result<DynamicImage, ImageError> {
     println!();
     if let Some(p_str) = path.to_str() {
         logger::print(
