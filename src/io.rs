@@ -8,11 +8,7 @@ pub mod input {
         image::{self, Device},
         logger,
     };
-    use std::{
-        fs::{self, create_dir},
-        io,
-        path::{Path, PathBuf},
-    };
+    use std::{fs::{self, create_dir, remove_dir, remove_dir_all}, io, path::{Path, PathBuf}};
 
     pub enum FileFormat {
         Image,
@@ -82,9 +78,11 @@ pub mod input {
         let archive = fs::File::open(&f_path).unwrap();
         let mut zip = zip::ZipArchive::new(archive).unwrap();
 
-        let _ = create_dir("tmp/");
-        if zip.extract(Path::new("tmp/")).is_ok() {
-            process(&Path::new("tmp/").to_path_buf(), out_path, &device);
+        let tmp_p = Path::new(out_path).join("tmp/");
+        let _ = create_dir(tmp_p.clone());
+        if zip.extract(tmp_p.clone()).is_ok() {
+            process(&tmp_p, out_path, &device);
+            let _ = remove_dir_all(tmp_p);
         } else {
             logger::println(
                 "An error occured while extracting the provided input file!",
