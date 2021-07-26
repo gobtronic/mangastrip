@@ -10,11 +10,11 @@ fn out() {
     };
 
     let out_path = output::build(&opt);
-    assert!(out_path.is_some(), true);
+    assert!(out_path.is_some());
     let out_path = out_path.unwrap();
-    assert!(out_path.to_str().is_some(), true);
+    assert!(out_path.to_str().is_some());
     let out_path = out_path.to_str().unwrap();
-    assert_eq!(out_path, "src/");
+    assert_eq!(out_path, "src/mangastrip_output/");
 }
 
 #[test]
@@ -27,11 +27,11 @@ fn out_w_dir_input() {
     };
 
     let out_path = output::build(&opt);
-    assert!(out_path.is_some(), true);
+    assert!(out_path.is_some());
     let out_path = out_path.unwrap();
-    assert!(out_path.to_str().is_some(), true);
+    assert!(out_path.to_str().is_some());
     let out_path = out_path.to_str().unwrap();
-    assert_eq!(out_path, "src/");
+    assert_eq!(out_path, "src/mangastrip_output/");
 }
 
 #[test]
@@ -44,11 +44,11 @@ fn out_w_file_input() {
     };
 
     let out_path = output::build(&opt);
-    assert!(out_path.is_some(), true);
+    assert!(out_path.is_some());
     let out_path = out_path.unwrap();
-    assert!(out_path.to_str().is_some(), true);
+    assert!(out_path.to_str().is_some());
     let out_path = out_path.to_str().unwrap();
-    assert_eq!(out_path, "src");
+    assert_eq!(out_path, "src/mangastrip_output/");
 }
 
 #[test]
@@ -61,11 +61,11 @@ fn out_w_root_file_input() {
     };
 
     let out_path = output::build(&opt);
-    assert!(out_path.is_some(), true);
+    assert!(out_path.is_some());
     let out_path = out_path.unwrap();
-    assert!(out_path.to_str().is_some(), true);
+    assert!(out_path.to_str().is_some());
     let out_path = out_path.to_str().unwrap();
-    assert_eq!(out_path, "./");
+    assert_eq!(out_path, "./mangastrip_output/");
 }
 
 #[test]
@@ -78,9 +78,9 @@ fn out_w_root_dir_input() {
     };
 
     let out_path = output::build(&opt);
-    assert!(out_path.is_some(), true);
+    assert!(out_path.is_some());
     let out_path = out_path.unwrap();
-    assert!(out_path.to_str().is_some(), true);
+    assert!(out_path.to_str().is_some());
     let out_path = out_path.to_str().unwrap();
-    assert_eq!(out_path, "./");
+    assert_eq!(out_path, "./mangastrip_output/");
 }

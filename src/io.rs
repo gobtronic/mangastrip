@@ -126,17 +126,17 @@ pub mod output {
                             };
 
                             let path = Path::new(p);
-                            return Some(path.join("mangastrip_output"));
+                            return Some(path.join("mangastrip_output/"));
                         }
                         None => None,
                     };
                 } else {
-                    return Some(in_path.join("mangastrip_output"));
+                    return Some(in_path.join("mangastrip_output/"));
                 }
             }
         };
 
-        Some(Path::new(out_path).join("mangastrip_output"))
+        Some(Path::new(out_path).join("mangastrip_output/"))
     }
 }
 
